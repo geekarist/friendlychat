@@ -48,6 +48,7 @@ public class SignInActivity extends AppCompatActivity implements
     private GoogleApiClient mGoogleApiClient;
 
     // Firebase instance variables
+    private FirebaseAuth mFirebaseAuth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,14 +72,26 @@ public class SignInActivity extends AppCompatActivity implements
                 .build();
 
         // Initialize FirebaseAuth
+        mFirebaseAuth = FirebaseAuth.getInstance();
     }
 
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.sign_in_button:
+                signIn();
                 break;
         }
+    }
+
+    private void signIn() {
+        Intent signInIntent = Auth.GoogleSignInApi.getSignInIntent(mGoogleApiClient);
+        startActivityForResult(signInIntent, RC_SIGN_IN);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
     }
 
     @Override
