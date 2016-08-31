@@ -99,6 +99,8 @@ public class MainActivity extends AppCompatActivity
     // Firebase instance variables
     private FirebaseAuth mFirebaseAuth;
     private FirebaseUser mFirebaseUser;
+    private DatabaseReference mFirebaseDb;
+    private FirebaseRecyclerAdapter<FriendlyMessage, MessageViewHolder> mFirebaseAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -134,7 +136,23 @@ public class MainActivity extends AppCompatActivity
         mLinearLayoutManager.setStackFromEnd(true);
         mMessageRecyclerView.setLayoutManager(mLinearLayoutManager);
 
-        mProgressBar.setVisibility(ProgressBar.INVISIBLE);
+        mFirebaseDb = FirebaseDatabase.getInstance().getReference();
+
+        mFirebaseAdapter = new FirebaseRecyclerAdapter<FriendlyMessage, MessageViewHolder>(
+                FriendlyMessage.class, R.layout.item_message, MessageViewHolder.class, mFirebaseDb) {
+            @Override
+            protected void populateViewHolder(MessageViewHolder viewHolder, FriendlyMessage model, int position) {
+                mProgressBar.setVisibility(View.INVISIBLE);
+                viewHolder.messageTextView.setText(model.getText());
+                viewHolder.messengerTextView.setText(model.getName());
+                Glide.with(MainActivity.this)
+                        .load(model.getPhotoUrl())
+                        .placeholder(ContextCompat.getDrawable(MainActivity.this, R.drawable.ic_account_circle_black_36dp))
+                        .into(viewHolder.messengerImageView);
+            }
+        };
+
+        mMessageRecyclerView.setAdapter(mFirebaseAdapter);
 
         mMessageEditText = (EditText) findViewById(R.id.messageEditText);
         mMessageEditText.setFilters(new InputFilter[]{new InputFilter.LengthFilter(mSharedPreferences
