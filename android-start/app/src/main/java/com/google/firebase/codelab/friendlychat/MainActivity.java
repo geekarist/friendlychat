@@ -17,6 +17,7 @@ package com.google.firebase.codelab.friendlychat;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
@@ -134,7 +135,6 @@ public class MainActivity extends AppCompatActivity
         mMessageRecyclerView = (RecyclerView) findViewById(R.id.messageRecyclerView);
         mLinearLayoutManager = new LinearLayoutManager(this);
         mLinearLayoutManager.setStackFromEnd(true);
-        mMessageRecyclerView.setLayoutManager(mLinearLayoutManager);
 
         mFirebaseDb = FirebaseDatabase.getInstance().getReference();
 
@@ -145,13 +145,40 @@ public class MainActivity extends AppCompatActivity
                 mProgressBar.setVisibility(View.INVISIBLE);
                 viewHolder.messageTextView.setText(model.getText());
                 viewHolder.messengerTextView.setText(model.getName());
-                Glide.with(MainActivity.this)
-                        .load(model.getPhotoUrl())
-                        .placeholder(ContextCompat.getDrawable(MainActivity.this, R.drawable.ic_account_circle_black_36dp))
-                        .into(viewHolder.messengerImageView);
+
+                if (model.getPhotoUrl() == null) {
+                    Drawable defaultDrawable = ContextCompat.getDrawable(
+                            MainActivity.this, R.drawable.ic_account_circle_black_36dp);
+                    viewHolder.messengerImageView.setImageDrawable(defaultDrawable);
+                } else {
+                    Glide.with(MainActivity.this)
+                            .load(model.getPhotoUrl())
+                            .placeholder(ContextCompat.getDrawable(MainActivity.this, R.drawable.ic_account_circle_black_36dp))
+                            .into(viewHolder.messengerImageView);
+                }
             }
         };
 
+        mFirebaseAdapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
+            @Override
+            public void onItemRangeInserted(int positionStart, int itemCount) {
+                super.onItemRangeInserted(positionStart, itemCount);
+
+                int messageCount = mFirebaseAdapter.getItemCount();
+
+                int lastVisiblePosition = mLinearLayoutManager.findLastCompletelyVisibleItemPosition();
+
+                boolean shouldScrollToEnd = (
+                        lastVisiblePosition == -1
+                                || (positionStart >= messageCount - 1 && lastVisiblePosition == positionStart - 1));
+
+                if (shouldScrollToEnd) {
+                    mMessageRecyclerView.scrollToPosition(positionStart);
+                }
+            }
+        });
+
+        mMessageRecyclerView.setLayoutManager(mLinearLayoutManager);
         mMessageRecyclerView.setAdapter(mFirebaseAdapter);
 
         mMessageEditText = (EditText) findViewById(R.id.messageEditText);
