@@ -138,26 +138,30 @@ public class MainActivity extends AppCompatActivity
 
         mFirebaseDb = FirebaseDatabase.getInstance().getReference();
 
-        mFirebaseAdapter = new FirebaseRecyclerAdapter<FriendlyMessage, MessageViewHolder>(
-                FriendlyMessage.class, R.layout.item_message, MessageViewHolder.class, mFirebaseDb) {
-            @Override
-            protected void populateViewHolder(MessageViewHolder viewHolder, FriendlyMessage model, int position) {
-                mProgressBar.setVisibility(View.INVISIBLE);
-                viewHolder.messageTextView.setText(model.getText());
-                viewHolder.messengerTextView.setText(model.getName());
+        mFirebaseAdapter =
+                new FirebaseRecyclerAdapter<FriendlyMessage,  MessageViewHolder>(
+                        FriendlyMessage.class,
+                        R.layout.item_message,
+                        MessageViewHolder.class,
+                        mFirebaseDb.child(MESSAGES_CHILD)) {
+                    @Override
+                    protected void populateViewHolder(MessageViewHolder viewHolder, FriendlyMessage model, int position) {
+                        mProgressBar.setVisibility(View.INVISIBLE);
+                        viewHolder.messageTextView.setText(model.getText());
+                        viewHolder.messengerTextView.setText(model.getName());
 
-                if (model.getPhotoUrl() == null) {
-                    Drawable defaultDrawable = ContextCompat.getDrawable(
-                            MainActivity.this, R.drawable.ic_account_circle_black_36dp);
-                    viewHolder.messengerImageView.setImageDrawable(defaultDrawable);
-                } else {
-                    Glide.with(MainActivity.this)
-                            .load(model.getPhotoUrl())
-                            .placeholder(ContextCompat.getDrawable(MainActivity.this, R.drawable.ic_account_circle_black_36dp))
-                            .into(viewHolder.messengerImageView);
-                }
-            }
-        };
+                        if (model.getPhotoUrl() == null) {
+                            Drawable defaultDrawable = ContextCompat.getDrawable(
+                                    MainActivity.this, R.drawable.ic_account_circle_black_36dp);
+                            viewHolder.messengerImageView.setImageDrawable(defaultDrawable);
+                        } else {
+                            Glide.with(MainActivity.this)
+                                    .load(model.getPhotoUrl())
+                                    .placeholder(ContextCompat.getDrawable(MainActivity.this, R.drawable.ic_account_circle_black_36dp))
+                                    .into(viewHolder.messengerImageView);
+                        }
+                    }
+                };
 
         mFirebaseAdapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
             @Override
