@@ -41,26 +41,19 @@ import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
-import com.google.android.gms.ads.AdRequest;
-import com.google.android.gms.ads.AdView;
-import com.google.android.gms.appinvite.AppInvite;
-import com.google.android.gms.appinvite.AppInviteInvitation;
 import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.crash.FirebaseCrash;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings;
 
 import java.util.HashMap;
-import java.util.Map;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
@@ -102,6 +95,7 @@ public class MainActivity extends AppCompatActivity
     private FirebaseUser mFirebaseUser;
     private DatabaseReference mFirebaseDb;
     private FirebaseRecyclerAdapter<FriendlyMessage, MessageViewHolder> mFirebaseAdapter;
+    private FirebaseRemoteConfig mRemoteConfig;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -139,7 +133,7 @@ public class MainActivity extends AppCompatActivity
         mFirebaseDb = FirebaseDatabase.getInstance().getReference();
 
         mFirebaseAdapter =
-                new FirebaseRecyclerAdapter<FriendlyMessage,  MessageViewHolder>(
+                new FirebaseRecyclerAdapter<FriendlyMessage, MessageViewHolder>(
                         FriendlyMessage.class,
                         R.layout.item_message,
                         MessageViewHolder.class,
@@ -217,6 +211,48 @@ public class MainActivity extends AppCompatActivity
                 mMessageEditText.setText("");
             }
         });
+
+        mRemoteConfig = FirebaseRemoteConfig.getInstance();
+
+        FirebaseRemoteConfigSettings remoteConfigSettings =
+                new FirebaseRemoteConfigSettings.Builder()
+                        .setDeveloperModeEnabled(true)
+                        .build();
+        HashMap<String, Object> defaultConfig = new HashMap<>();
+        defaultConfig.put("max_message_length", 10L);
+        mRemoteConfig.setConfigSettings(remoteConfigSettings);
+        mRemoteConfig.setDefaults(defaultConfig);
+
+        fetchConfig();
+    }
+
+    private void fetchConfig() {
+
+        int cacheExpiration =
+                mRemoteConfig.getInfo().getConfigSettings().isDeveloperModeEnabled() ?
+                        0 : 3600;
+
+        mRemoteConfig.fetch(cacheExpiration)
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void aVoid) {
+                        Log.i(MainActivity.this.getClass().getSimpleName(), "Remote remote config fetch success");
+                        mRemoteConfig.activateFetched();
+                        applyMaxMessageConfig();
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.i(MainActivity.this.getClass().getSimpleName(), "Error while fetching remote config");
+                        applyMaxMessageConfig();
+                    }
+                });
+    }
+
+    private void applyMaxMessageConfig() {
+        int length = (int) mRemoteConfig.getLong("max_message_length");
+        mMessageEditText.setFilters(new InputFilter[] {new InputFilter.LengthFilter(length)});
     }
 
     @Override
