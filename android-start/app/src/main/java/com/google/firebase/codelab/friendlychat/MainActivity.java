@@ -41,11 +41,14 @@ import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
+import com.google.android.gms.appinvite.AppInvite;
+import com.google.android.gms.appinvite.AppInviteInvitation;
 import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
@@ -75,10 +78,11 @@ public class MainActivity extends AppCompatActivity
 
     private static final String TAG = "MainActivity";
     public static final String MESSAGES_CHILD = "messages";
-    private static final int REQUEST_INVITE = 1;
+    private static final int RC_REQUEST_INVITE = 1;
     public static final int DEFAULT_MSG_LENGTH_LIMIT = 10;
     public static final String ANONYMOUS = "anonymous";
     private static final String MESSAGE_SENT_EVENT = "message_sent";
+
     private String mUsername;
     private String mPhotoUrl;
     private SharedPreferences mSharedPreferences;
@@ -96,6 +100,7 @@ public class MainActivity extends AppCompatActivity
     private DatabaseReference mFirebaseDb;
     private FirebaseRecyclerAdapter<FriendlyMessage, MessageViewHolder> mFirebaseAdapter;
     private FirebaseRemoteConfig mRemoteConfig;
+    private FirebaseAnalytics mFirebaseAnalytics;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -122,6 +127,7 @@ public class MainActivity extends AppCompatActivity
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .enableAutoManage(this /* FragmentActivity */, this /* OnConnectionFailedListener */)
                 .addApi(Auth.GOOGLE_SIGN_IN_API)
+                .addApi(AppInvite.API)
                 .build();
 
         // Initialize ProgressBar and RecyclerView.
@@ -224,6 +230,8 @@ public class MainActivity extends AppCompatActivity
         mRemoteConfig.setDefaults(defaultConfig);
 
         fetchConfig();
+
+        mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
     }
 
     private void fetchConfig() {
@@ -289,6 +297,10 @@ public class MainActivity extends AppCompatActivity
 
         switch (item.getItemId()) {
 
+            case R.id.invite_menu:
+                sendInvitations();
+                return true;
+
             case R.id.fresh_config_menu:
                 fetchConfig();
                 return true;
@@ -303,6 +315,39 @@ public class MainActivity extends AppCompatActivity
 
             default:
                 return super.onOptionsItemSelected(item);
+        }
+    }
+
+    private void sendInvitations() {
+
+        Intent intent = new AppInviteInvitation
+                .IntentBuilder(getString(R.string.invitation_title))
+                .setCallToActionText(getString(R.string.invitation_cta))
+                .setMessage(getString(R.string.invitation_message))
+                .build();
+
+        startActivityForResult(intent, RC_REQUEST_INVITE);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == RC_REQUEST_INVITE) {
+            if (resultCode == RESULT_OK) {
+                String[] invitationIds = AppInviteInvitation.getInvitationIds(resultCode, data);
+                Log.d(TAG, "Invitations sent: " + invitationIds.length);
+
+                Bundle bundle = new Bundle();
+                bundle.putString(FirebaseAnalytics.Param.VALUE, "sent");
+                mFirebaseAnalytics.logEvent(FirebaseAnalytics.Event.SHARE, bundle);
+            } else {
+                Log.d(TAG, "Failed to send invitation");
+
+                Bundle bundle = new Bundle();
+                bundle.putString(FirebaseAnalytics.Param.VALUE, "not_sent");
+                mFirebaseAnalytics.logEvent(FirebaseAnalytics.Event.SHARE, bundle);
+            }
         }
     }
 
