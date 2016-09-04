@@ -289,6 +289,10 @@ public class MainActivity extends AppCompatActivity
 
         switch (item.getItemId()) {
 
+            case R.id.fresh_config_menu:
+                fetchConfig();
+                return true;
+
             case R.id.sign_out_menu:
 
                 mFirebaseAuth.signOut();
