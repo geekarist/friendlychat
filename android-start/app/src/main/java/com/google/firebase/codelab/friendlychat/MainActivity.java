@@ -41,6 +41,8 @@ import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdView;
 import com.google.android.gms.appinvite.AppInvite;
 import com.google.android.gms.appinvite.AppInviteInvitation;
 import com.google.android.gms.auth.api.Auth;
@@ -101,6 +103,8 @@ public class MainActivity extends AppCompatActivity
     private FirebaseRecyclerAdapter<FriendlyMessage, MessageViewHolder> mFirebaseAdapter;
     private FirebaseRemoteConfig mRemoteConfig;
     private FirebaseAnalytics mFirebaseAnalytics;
+
+    private AdView mAdView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -232,6 +236,10 @@ public class MainActivity extends AppCompatActivity
         fetchConfig();
 
         mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
+
+        mAdView = (AdView) findViewById(R.id.main_ad_view);
+        AdRequest adReq = new AdRequest.Builder().build();
+        mAdView.loadAd(adReq);
     }
 
     private void fetchConfig() {
