@@ -311,6 +311,10 @@ public class MainActivity extends AppCompatActivity
 
         switch (item.getItemId()) {
 
+            case R.id.crash_menu:
+                causeCrash();
+                return true;
+
             case R.id.invite_menu:
                 sendInvitations();
                 return true;
@@ -330,6 +334,10 @@ public class MainActivity extends AppCompatActivity
             default:
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+    private void causeCrash() {
+        throw new RuntimeException();
     }
 
     private void sendInvitations() {
